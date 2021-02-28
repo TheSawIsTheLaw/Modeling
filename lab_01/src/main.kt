@@ -7,7 +7,6 @@ const val picF = 120
 const val picFfo = picF / 4 - 1
 const val eulF = 40
 const val rkF = 40
-const val wholetable = xF + picF + picFfo + eulF + rkF
 
 fun firstApprox(x: Double) : Double
 {
