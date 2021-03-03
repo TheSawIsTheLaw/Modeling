@@ -1,6 +1,7 @@
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.pow
+import kotlin.math.round
 
 const val xF = 10
 const val picF = 120
@@ -118,7 +119,7 @@ fun printAnswers(picAnsw: MutableList<MutableList<Double>>, eulAnsw: MutableList
         val curPic = picAnsw[i]
         println(
             String.format(
-                "|%-${xF}f|%-${picFfo}f|%${picFfo}f|%${picFfo}f|%${picFfo}f|%${eulF}f|%${rkF}f|",
+                "|%-${xF}.2f|%-${picFfo}.2f|%${picFfo}.2f|%${picFfo}.2f|%${picFfo}.2f|%${eulF}.2f|%${rkF}.2f|",
                 curPic[0], curPic[1], curPic[2], curPic[3], curPic[4], eulAnsw[i], runAnsw[i]
             )
         )
@@ -132,7 +133,7 @@ fun printAnswers(picAnsw: MutableList<MutableList<Double>>, eulAnsw: MutableList
 fun main()
 {
     val xStart = 0.0
-    val xStop = 2.1
+    val xStop = 2.3
     val yStart = 0.0
     val step = 10e-5
 
