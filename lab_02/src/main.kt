@@ -91,7 +91,7 @@ fun getSigma(
     val currentT0: Double = linearInterpolation(IT0_Table, amperage)
     val currentM: Double = linearInterpolation(Im_Table, amperage)
 
-    return linearInterpolation(Tsigma_Table, currentT0 + (Tw - currentT0) * (curZ.pow(currentM))) * curZ
+    return linearInterpolation(Tsigma_Table, currentT0 + (Tw - currentT0) * curZ.pow(currentM)) * curZ
 }
 fun findNonLinearResistance(IT0_Table: List<Pair<Double, Double>>,
                             Im_Table: List<Pair<Double, Double>>,
@@ -99,8 +99,10 @@ fun findNonLinearResistance(IT0_Table: List<Pair<Double, Double>>,
                             Tw: Double, amperage: Double,
                             Ie: Double, Res: Double): Double
 {
-    return Ie / (2 * PI * Res * Res * trapezodialIntegrationWithFunction(0.0, 1.0, 100,
-        IT0_Table, Im_Table, Tsigma_Table, Tw, amperage, ::getSigma, ))
+    return Ie / (2 * PI * Res * Res * trapezodialIntegrationWithFunction(
+        0.0, 1.0, 100,
+        IT0_Table, Im_Table, Tsigma_Table, Tw, amperage, ::getSigma
+    ))
 }
 
 fun fFunction(curA: Double, curU: Double, parameters: Map<String, Double>,
@@ -132,10 +134,10 @@ fun getNextAmperageVoltage(curA: Double,
     val phi2 = phiFunction(curA + step * f1 / 2, Ck)
     val f3 = fFunction(curA + step * f2 / 2, curU + step * phi2 / 2, parameters, IT0_Table, Im_Table, Tsigma_Table)
     val phi3 = phiFunction(curA + step * f2 / 2, Ck)
-    val f4 = fFunction(curA + step * f3 / 2, curU + step * phi3 / 2, parameters, IT0_Table, Im_Table, Tsigma_Table)
-    val phi4 = phiFunction(curA + step * f3 / 2, Ck)
+    val f4 = fFunction(curA + step * f3, curU + step * phi3, parameters, IT0_Table, Im_Table, Tsigma_Table)
+    val phi4 = phiFunction(curA + step * f3, Ck)
 
-    return Pair(curA + step * (f1 + 2 * f2 + 2 * f3 + f4) / 6, curA + step * (phi1 + 2 * phi2 + 2 * phi3 + phi4) / 6)
+    return Pair(curA + step * (f1 + 2 * f2 + 2 * f3 + f4) / 6, curU + step * (phi1 + 2 * phi2 + 2 * phi3 + phi4) / 6)
 }
 
 fun main()
@@ -205,7 +207,7 @@ fun main()
     }
 
     for (i in outTableIT)
-        println(i.first)
+        println("%.6f".format(i.second))
 }
 
 // Надо всё перепроверять))))))))))))))00
