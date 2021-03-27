@@ -1,20 +1,22 @@
+import kotlin.math.round
+
 // Linear interpolation. Works only for (sort #'> table)
 // Returns null/not null values so check it out properly
-fun linearInterpolation(table: List<Pair<Double, Double>>, findX: Double): Double?
+fun linearInterpolation(table: List<Pair<Double, Double>>, findX: Double): Double
 {
-    if (findX > table.last().first)
-        return null
+    if (findX > table.last().first) return table.last().first
+    if (findX == table[0].first) return table[0].second
 
     var firstDot: Pair<Double, Double>? = null
     var secondDot: Pair<Double, Double>? = null
 
     var curPairInd: Int = 0
-    while ((curPairInd < table.size - 1) && (firstDot == null))
+    while ((curPairInd < table.size) && (firstDot == null))
     {
-        if (table[curPairInd].first < findX)
+        if (table[curPairInd].first >= findX)
         {
-            firstDot = table[curPairInd]
-            secondDot = table[curPairInd + 1]
+            firstDot = table[curPairInd - 1]
+            secondDot = table[curPairInd]
         }
         curPairInd++
     }
@@ -23,11 +25,36 @@ fun linearInterpolation(table: List<Pair<Double, Double>>, findX: Double): Doubl
             (secondDot!!.second - firstDot.second) / (secondDot.first - firstDot.first) * (findX - firstDot.first)
 }
 
+fun trapezodialIntegration(
+    leftLimit: Double,
+    rightLimit: Double,
+    fragNum: Int,
+    table: List<Pair<Double, Double>>) : Double
+{
+    val step: Double = (rightLimit - leftLimit) / fragNum
+    var curX: Double = leftLimit
+    var outSum: Double = 0.0
+    var fInter: Double?
+    var sInter: Double?
+    for (ind in 0 until fragNum)
+    {
+        fInter = linearInterpolation(table, curX)
+        sInter = linearInterpolation(table, curX + step)
+        outSum += (fInter + sInter) / 2.0
+
+        curX += step
+    }
+
+    println(outSum)
+
+    return round((outSum * step) * 1e5) / 1e5
+}
+
 fun main()
 {
-    var testTable: List<Pair<Double, Double>> = listOf(Pair(2.0, 5.0), Pair(5.0, 11.0))
-    println("Found interpolated value for x = 3 is: ${linearInterpolation(testTable, 3.0)}")
+    val table: List<Pair<Double, Double>> = listOf(Pair(.0, .0), Pair(1.0, 1.0), Pair(2.0, 2.0))
 
-    testTable = listOf(Pair(2.0, 4.0), Pair(5.0, 25.0))
-    println("Found interpolated value for x = 3 is: ${linearInterpolation(testTable, 3.0)}")
+    println(linearInterpolation(table, 1.95000000000001))
+    val out = trapezodialIntegration(0.0, 2.0, 40, table)
+    println("Outer result is: $out")
 }
