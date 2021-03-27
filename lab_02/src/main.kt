@@ -1,4 +1,5 @@
 import kotlin.math.PI
+import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -28,7 +29,7 @@ fun linearInterpolation(table: List<Pair<Double, Double>>, findX: Double): Doubl
 }
 
 // trapezodial integration. Be careful with arguments: leftLimit > rightLimit and fragNum > 0
-fun trapezodialIntegration(
+fun trapezodialIntegrationWithTable(
     leftLimit: Double,
     rightLimit: Double,
     fragNum: Int,
@@ -51,38 +52,63 @@ fun trapezodialIntegration(
     return round((outSum * step) * 1e5) / 1e5
 }
 
-fun prepareSigmaT_Table(
+fun trapezodialIntegrationWithFunction(
+    leftLimit: Double,
+    rightLimit: Double,
+    fragNum: Int,
     IT0_Table: List<Pair<Double, Double>>,
     Im_Table: List<Pair<Double, Double>>,
     Tsigma_Table: List<Pair<Double, Double>>,
-    parameters: Map<String, Double>) : MutableList<Pair<Double, Double>>
+    Tw: Double,
+    amperage: Double,
+    func: (List<Pair<Double, Double>>,
+           List<Pair<Double, Double>>,
+           List<Pair<Double, Double>>,
+           Double, Double, Double) -> Double) : Double
 {
-    val outTable: MutableList<Pair<Double, Double>> = mutableListOf()
+    val step: Double = (rightLimit - leftLimit) / fragNum
+    var outSum: Double = (func(IT0_Table, Im_Table, Tsigma_Table, leftLimit, amperage, Tw) +
+                            func(IT0_Table, Im_Table, Tsigma_Table, rightLimit, amperage, Tw)) / 2
 
-    var amperage: Double
-    var currentT0: Double
-    var currentM: Double
-    var sigma: Double
-    for (i in IT0_Table)
+    var curX: Double = 0.0
+    for (ind in 0 until fragNum - 1)
     {
-        amperage = i.first
-        currentT0 = linearInterpolation(IT0_Table, amperage)
-        currentM = linearInterpolation(Im_Table, amperage)
-
-        sigma = linearInterpolation(Tsigma_Table, currentT0 + (parameters["Tw"]!! - currentT0) * amperage) * amperage.pow(currentM)
-        outTable.add(Pair(sigma, currentT0))
+        curX += step
+        outSum += func(IT0_Table, Im_Table, Tsigma_Table, curX, amperage, Tw)
     }
 
-    return outTable
-}
-fun findNonLinearResistance(Le: Double, Res: Double, TzTable: List<Pair<Double, Double>>): Double
-{
-    return Le / (PI * Res * Res * trapezodialIntegration(0.0, 1.0, 100, TzTable))
+    return round((outSum * step) * 1e5) / 1e5
 }
 
-fun fFunction(curA: Double, curU: Double, parameters: Map<String, Double>, TzTable: List<Pair<Double, Double>>): Double
+fun getSigma(
+    IT0_Table: List<Pair<Double, Double>>,
+    Im_Table: List<Pair<Double, Double>>,
+    Tsigma_Table: List<Pair<Double, Double>>,
+    curZ: Double,
+    amperage: Double,
+    Tw: Double) : Double
 {
-    return (curU - (parameters["Rk"]!! + findNonLinearResistance(parameters["Ie"]!!, parameters["R"]!!, TzTable)) * curA) / parameters["Lk"]!!
+    val currentT0: Double = linearInterpolation(IT0_Table, amperage)
+    val currentM: Double = linearInterpolation(Im_Table, amperage)
+
+    return linearInterpolation(Tsigma_Table, currentT0 + (Tw - currentT0) * (curZ.pow(currentM))) * curZ
+}
+fun findNonLinearResistance(IT0_Table: List<Pair<Double, Double>>,
+                            Im_Table: List<Pair<Double, Double>>,
+                            Tsigma_Table: List<Pair<Double, Double>>,
+                            Tw: Double, amperage: Double,
+                            Ie: Double, Res: Double): Double
+{
+    return Ie / (2 * PI * Res * Res * trapezodialIntegrationWithFunction(0.0, 1.0, 100,
+        IT0_Table, Im_Table, Tsigma_Table, Tw, amperage, ::getSigma, ))
+}
+
+fun fFunction(curA: Double, curU: Double, parameters: Map<String, Double>,
+              IT0_Table: List<Pair<Double, Double>>, Im_Table: List<Pair<Double, Double>>,
+              Tsigma_Table: List<Pair<Double, Double>>): Double
+{
+    return (curU - (parameters["Rk"]!! + findNonLinearResistance(IT0_Table, Im_Table, Tsigma_Table,
+        parameters["Tw"]!!, curA.absoluteValue, parameters["Ie"]!!, parameters["R"]!!)) * curA) / parameters["Lk"]!!
 }
 
 fun phiFunction(curA: Double, Ck: Double): Double
@@ -93,18 +119,20 @@ fun phiFunction(curA: Double, Ck: Double): Double
 fun getNextAmperageVoltage(curA: Double,
                            curU: Double,
                            parameters: Map<String, Double>,
-                           TzTable: List<Pair<Double, Double>>,
+                           IT0_Table: List<Pair<Double, Double>>,
+                           Im_Table: List<Pair<Double, Double>>,
+                           Tsigma_Table: List<Pair<Double, Double>>,
                            step: Double): Pair<Double, Double>
 {
     val Ck = parameters["Ck"]!!
 
-    val f1 = fFunction(curA, curU, parameters, TzTable)
+    val f1 = fFunction(curA, curU, parameters, IT0_Table, Im_Table, Tsigma_Table)
     val phi1 = phiFunction(curA, Ck)
-    val f2 = fFunction(curA + step * f1 / 2, curU + step * phi1 / 2, parameters, TzTable)
+    val f2 = fFunction(curA + step * f1 / 2, curU + step * phi1 / 2, parameters, IT0_Table, Im_Table, Tsigma_Table)
     val phi2 = phiFunction(curA + step * f1 / 2, Ck)
-    val f3 = fFunction(curA + step * f2 / 2, curU + step * phi2 / 2, parameters, TzTable)
+    val f3 = fFunction(curA + step * f2 / 2, curU + step * phi2 / 2, parameters, IT0_Table, Im_Table, Tsigma_Table)
     val phi3 = phiFunction(curA + step * f2 / 2, Ck)
-    val f4 = fFunction(curA + step * f3 / 2, curU + step * phi3 / 2, parameters, TzTable)
+    val f4 = fFunction(curA + step * f3 / 2, curU + step * phi3 / 2, parameters, IT0_Table, Im_Table, Tsigma_Table)
     val phi4 = phiFunction(curA + step * f3 / 2, Ck)
 
     return Pair(curA + step * (f1 + 2 * f2 + 2 * f3 + f4) / 6, curA + step * (phi1 + 2 * phi2 + 2 * phi3 + phi4) / 6)
@@ -156,10 +184,8 @@ fun main()
         mapOf("R" to 0.35, "Ie" to 12.0, "Lk" to 187 * 1e-6, "Ck" to 268 * 1e-6, "Rk" to 0.25,
             "Uco" to 1400.0, "Tw" to 2000.0)
 
-    val TzTable = prepareSigmaT_Table(IT0_Table, Im_Table, Tsigma_Table, parameters)
-
     var curT: Double = 0.0
-    val step: Double = 1e-5
+    val step: Double = 1e-6
     var currentAmperage: Double = 0.0
     var currentVoltage: Double = 1400.0
 
@@ -168,7 +194,7 @@ fun main()
 
     for (i in 0 until 1200)
     {
-        val curPair = getNextAmperageVoltage(currentAmperage, currentVoltage, parameters, TzTable, step)
+        val curPair = getNextAmperageVoltage(currentAmperage, currentVoltage, parameters, IT0_Table, Im_Table, Tsigma_Table, step)
         currentAmperage = curPair.first
         currentVoltage = curPair.second
 
@@ -178,4 +204,8 @@ fun main()
         curT += step
     }
 
+    for (i in outTableIT)
+        println(i.first)
 }
+
+// Надо всё перепроверять))))))))))))))00
