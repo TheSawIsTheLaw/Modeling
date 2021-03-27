@@ -206,8 +206,6 @@ fun main()
         curT += step
     }
 
-    for (i in outTableIT)
-        println("%.6f".format(i.second))
+    for (i in outTableUT)
+        println("%.6f".format(i.first))
 }
-
-// Надо всё перепроверять))))))))))))))00
