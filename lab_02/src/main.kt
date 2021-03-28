@@ -2,6 +2,7 @@ import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.round
+import jetbrains.datalore.plot.*
 
 // Linear interpolation. Works only for (sort #'> table)
 // Returns null/not null values so check it out properly
@@ -71,7 +72,7 @@ fun trapezodialIntegrationWithFunction(
                             func(IT0_Table, Im_Table, Tsigma_Table, rightLimit, amperage, Tw)) / 2
 
     var curX: Double = 0.0
-    for (ind in 0 until fragNum - 1)
+    for (ind in 1 until fragNum - 1)
     {
         curX += step
         outSum += func(IT0_Table, Im_Table, Tsigma_Table, curX, amperage, Tw)
@@ -194,7 +195,7 @@ fun main()
     val outTableIT: MutableList<Pair<Double, Double>> = mutableListOf()
     val outTableUT: MutableList<Pair<Double, Double>> = mutableListOf()
 
-    for (i in 0 until 1200)
+    for (i in 0 until 1500)
     {
         val curPair = getNextAmperageVoltage(currentAmperage, currentVoltage, parameters, IT0_Table, Im_Table, Tsigma_Table, step)
         currentAmperage = curPair.first
@@ -208,4 +209,5 @@ fun main()
 
     for (i in outTableUT)
         println("%.6f".format(i.first))
+
 }
