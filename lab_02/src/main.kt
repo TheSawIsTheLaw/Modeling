@@ -2,7 +2,9 @@ import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.round
-import jetbrains.datalore.plot.*
+
+var curRp = 0.0
+var curT0 = 0.0
 
 // Linear interpolation. Works only for (sort #'> table)
 // Returns null/not null values so check it out properly
@@ -90,6 +92,7 @@ fun getSigma(
     Tw: Double) : Double
 {
     val currentT0: Double = linearInterpolation(IT0_Table, amperage)
+    curT0 = currentT0
     val currentM: Double = linearInterpolation(Im_Table, amperage)
 
     return linearInterpolation(Tsigma_Table, currentT0 + (Tw - currentT0) * curZ.pow(currentM)) * curZ
@@ -100,10 +103,11 @@ fun findNonLinearResistance(IT0_Table: List<Pair<Double, Double>>,
                             Tw: Double, amperage: Double,
                             Ie: Double, Res: Double): Double
 {
-    return Ie / (2 * PI * Res * Res * trapezodialIntegrationWithFunction(
+    curRp = Ie / (2 * PI * Res * Res * trapezodialIntegrationWithFunction(
         0.0, 1.0, 100,
         IT0_Table, Im_Table, Tsigma_Table, Tw, amperage, ::getSigma
     ))
+    return curRp
 }
 
 fun fFunction(curA: Double, curU: Double, parameters: Map<String, Double>,
@@ -194,7 +198,11 @@ fun main()
 
     val outTableIT: MutableList<Pair<Double, Double>> = mutableListOf()
     val outTableUT: MutableList<Pair<Double, Double>> = mutableListOf()
+    val outTableRpT: MutableList<Pair<Double, Double>> = mutableListOf()
+    val outTableT0: MutableList<Pair<Double, Double>> = mutableListOf()
+    val outTableIRpT: MutableList<Pair<Double, Double>> = mutableListOf()
 
+    // Меняй на 1200 и смотри, что рисовал Градов
     for (i in 0 until 1500)
     {
         val curPair = getNextAmperageVoltage(currentAmperage, currentVoltage, parameters, IT0_Table, Im_Table, Tsigma_Table, step)
@@ -203,11 +211,14 @@ fun main()
 
         outTableIT.add(Pair(currentAmperage, curT))
         outTableUT.add(Pair(currentVoltage, curT))
+        outTableRpT.add(Pair(curRp, curT))
+        outTableT0.add(Pair(curT0, curT))
+        outTableIRpT.add(Pair(currentAmperage * curRp, curT))
 
         curT += step
     }
 
-    for (i in outTableUT)
+    for (i in outTableRpT)
         println("%.6f".format(i.first))
 
 }
