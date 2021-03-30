@@ -60,6 +60,7 @@ fun trapezodialIntegrationWithTable(
     return round((outSum * step) * 1e5) / 1e5
 }
 
+// trapezodial integration. Be careful with arguments: leftLimit > rightLimit and fragNum > 0
 fun trapezodialIntegrationWithFunction(
     leftLimit: Double,
     rightLimit: Double,
@@ -212,7 +213,8 @@ fun main()
         curT += step
     }
 
+    // So there's no plots in vanilla Kotlin.
+    // We just using Excel. Thank you, Microsoft.
     for (i in outTableIT)
         println("%.6f".format(i.first))
-
 }
