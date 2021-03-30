@@ -109,7 +109,7 @@ fun findNonLinearResistance(IT0_Table: List<Pair<Double, Double>>,
 fun fFunction(curA: Double, curU: Double, parameters: Map<String, Double>,
               Rp: Double): Double
 {
-    return (curU - (parameters["Rk"]!! + Rp) * curA) / parameters["Lk"]!!
+    return (curU - (/* parameters["Rk"]!! + Rp */ /* 0 */ 200) * curA) / parameters["Lk"]!!
 }
 
 fun phiFunction(curA: Double, Ck: Double): Double
@@ -184,7 +184,7 @@ fun main()
             "Uco" to 1400.0, "Tw" to 2000.0)
 
     var curT: Double = 0.0
-    val step: Double = 1e-6
+    val step: Double = 1e-7
     var currentAmperage: Double = 0.0
     var currentVoltage: Double = 1400.0
 
@@ -196,7 +196,7 @@ fun main()
 
     var curRp: Double
 
-    while (curT < 8e-4)
+    while (curT < 2e-5)
     {
         curRp = findNonLinearResistance(IT0_Table, Im_Table, Tsigma_Table, parameters["Tw"]!!, currentAmperage, parameters["Ie"]!!, parameters["R"]!!)
 
@@ -212,7 +212,7 @@ fun main()
         curT += step
     }
 
-    for (i in outTableRpT)
-        println("%.6f".format(i.first))
+    for (i in outTableIT)
+        println("%.7f".format(i.first))
 
 }
