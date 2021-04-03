@@ -6,7 +6,6 @@ import kotlin.math.round
 var curT0 = 0.0
 
 // Linear interpolation. Works only for (sort #'> table)
-// Returns null/not null values so check it out properly
 fun linearInterpolation(table: List<Pair<Double, Double>>, findX: Double): Double
 {
     if (findX <= table[0].first) return table[0].second +
