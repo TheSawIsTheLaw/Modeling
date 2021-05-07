@@ -2,11 +2,7 @@ import kotlin.math.abs
 import kotlin.math.pow
 import org.math.plot.*
 import javax.swing.*
-import javax.swing.JFrame
 import org.math.plot.Plot2DPanel
-
-
-
 
 class Parameters()
 {
@@ -147,7 +143,7 @@ fun formNewTList(list: MutableList<Double>): MutableList<Double>
 
     outT[curN] = (nTriple.third - nTriple.second * etaList[curN]) / (nTriple.first + nTriple.second * xiList[curN])
 
-    for (i in (curN - 1)..-1 step -1)
+    for (i in curN - 1 downTo 0)
         outT[i] = xiList[i + 1] * outT[i + 1] + etaList[i + 1]
 
     return outT
@@ -156,7 +152,7 @@ fun formNewTList(list: MutableList<Double>): MutableList<Double>
 fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
 {
     var tList = mutableListOf<Double>()
-    val newTList = mutableListOf<Double>()
+    var newTList = mutableListOf<Double>()
 
     for (i in 0..(parameters.l / parameters.h).toInt())
     {
@@ -164,8 +160,7 @@ fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
         newTList.add(0.0)
     }
 
-    val outList = mutableListOf<MutableList<Double>>()
-    outList.add(tList)
+    val outList = mutableListOf(tList)
 
     var curT = 0.0
     var cond = true
@@ -176,7 +171,7 @@ fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
 
         while (max >= 1)
         {
-            var newTList = formNewTList(prevTList)
+            newTList = formNewTList(prevTList)
             max = abs((tList.first() - newTList.first()) / newTList.first())
 
             for (ind in tList.indices)
@@ -209,30 +204,42 @@ fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
 
 fun main()
 {
-    val x = doubleArrayOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    val y = doubleArrayOf(45.0, 89.0, 6.0, 32.0, 63.0, 12.0)
+    val out = simpleIteration()
 
-    // create your PlotPanel (you can use it as a JPanel)
+    val xList = mutableListOf<Double>()
+    var i = 0.0
+    while (i < parameters.l)
+    {
+        xList.add(i)
+        i += parameters.h
+    }
 
-    // create your PlotPanel (you can use it as a JPanel)
     val plot = Plot2DPanel()
+    println(out.first.size)
+    for (curY in out.first.indices)
+    {
+        if (curY % 2 == 0)
+            plot.addLinePlot(curY.toString(), xList.toDoubleArray(), out.first[curY].toDoubleArray())
+    }
 
-    // define the legend position
-
-    // define the legend position
+    val frame = JFrame("Plots in Kotlin oh")
     plot.addLegend("SOUTH")
-
-    // add a line plot to the PlotPanel
-
-    // add a line plot to the PlotPanel
-    plot.addLinePlot("my plot", x, y)
-
-    // put the PlotPanel in a JFrame like a JPanel
-
-    // put the PlotPanel in a JFrame like a JPanel
-    val frame = JFrame("a plot panel")
-    frame.setSize(600, 600)
     frame.contentPane = plot
     frame.isVisible = true
+
+//    val x = doubleArrayOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+//    val y = doubleArrayOf(45.0, 89.0, 6.0, 32.0, 63.0, 12.0)
+//    val y2 = doubleArrayOf(33.0, 666.0, 66.0, 66.0, 66.0, 0.0)
+//
+//    val plot = Plot2DPanel()
+//    plot.addLegend("SOUTH")
+//
+//    plot.addLinePlot("my plot", x, y)
+//    plot.addLinePlot("shit", x, y2)
+//
+//    val frame = JFrame("a plot panel")
+//    frame.setSize(600, 600)
+//    frame.contentPane = plot
+//    frame.isVisible = true
 
 }
