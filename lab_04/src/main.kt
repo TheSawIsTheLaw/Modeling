@@ -1,9 +1,7 @@
 import kotlin.math.abs
 import kotlin.math.pow
-import org.math.plot.*
 import javax.swing.*
 import org.math.plot.Plot2DPanel
-import java.awt.Color
 
 class Parameters()
 {
@@ -23,7 +21,7 @@ class Parameters()
     val fZero = 50.0
     val h = 1e-3
     val t = 1.0
-    val epsilon = 1e-2
+    val epsilon = 1e-3
 }
 
 val parameters = Parameters()
@@ -219,8 +217,8 @@ fun main()
     val plot = Plot2DPanel()
     for (curY in out.first.indices)
     {
-        if (curY % 2 == 0)
-            plot.addLinePlot(curY.toString(), xList.toDoubleArray(), out.first[curY].toDoubleArray())
+        if (curY % 4 == 0)
+            plot.addLinePlot("time = $curY", xList.toDoubleArray(), out.first[curY].toDoubleArray())
     }
 
     val frame = JFrame("T(x)")
@@ -248,7 +246,7 @@ fun main()
         val curList = mutableListOf<Double>()
         for (curF in out.first)
             curList.add((curF[(k / parameters.h).toInt()]))
-        sPlot.addLinePlot(k.toString(), secList.toDoubleArray(), curList.toDoubleArray())
+        sPlot.addLinePlot("len = %.1f".format(k), secList.toDoubleArray(), curList.toDoubleArray())
 
         k += 0.1
     }
