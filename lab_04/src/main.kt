@@ -3,6 +3,7 @@ import kotlin.math.pow
 import org.math.plot.*
 import javax.swing.*
 import org.math.plot.Plot2DPanel
+import java.awt.Color
 
 class Parameters()
 {
@@ -209,7 +210,7 @@ fun main()
 
     val xList = mutableListOf<Double>()
     var i = 0.0
-    while (i < parameters.l)
+    while (i < 2)
     {
         xList.add(i)
         i += parameters.h
@@ -222,10 +223,11 @@ fun main()
             plot.addLinePlot(curY.toString(), xList.toDoubleArray(), out.first[curY].toDoubleArray())
     }
 
-    val frame = JFrame("Plots in Kotlin oh")
+    val frame = JFrame("T(x)")
     plot.addLegend("SOUTH")
-    plot.setAxisLabel(0, "x")
-    plot.setAxisLabel(1, "T")
+
+    plot.setAxisLabel(0, "x, сантиметры")
+    plot.setAxisLabel(1, "T, Кельвины")
     frame.setSize(1000, 1000)
     frame.contentPane = plot
     frame.isVisible = true
@@ -239,6 +241,7 @@ fun main()
     }
 
     val sPlot = Plot2DPanel()
+
     var k = 0.0
     while (k < parameters.l / 3)
     {
@@ -250,8 +253,10 @@ fun main()
         k += 0.1
     }
     sPlot.addLegend("SOUTH")
-    val newFrame = JFrame("Second plot")
+    val newFrame = JFrame("T(t)")
     newFrame.setSize(1000, 1000)
+    sPlot.setAxisLabel(0, "t, Секунды")
+    sPlot.setAxisLabel(1, "T, Кельвины")
     newFrame.contentPane = sPlot
     newFrame.isVisible = true
 
