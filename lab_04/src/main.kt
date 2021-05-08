@@ -15,10 +15,10 @@ class Parameters()
     val c2 = 0.528e5
     val m2 = 1.0
     val alphaZero = 0.05
-    val alphaN = 0.01
+    val alphaN = 1e-2
     val l = 10.0
-    val t0 = 300.0
-    val r = 0.5
+    val tZero = 300.0
+    val r = 5e-1
     val fZero = 50.0
     val h = 1e-3
     val t = 1.0
@@ -39,7 +39,7 @@ fun minusApprox(function: (Double) -> Double, n: Double, step: Double): Double
 
 val kFun = { x: Double -> parameters.a1 * (parameters.b1 + parameters.c1 * parameters.m1.pow(x)) }
 
-val cFun = { x: Double -> parameters.a2 + parameters.b2 * parameters.m2.pow(x) - (parameters.c2 / 2.0.pow(x)) }
+val cFun = { x: Double -> parameters.a2 + parameters.b2 * x.pow(parameters.m2) - (parameters.c2 / x.pow(2)) }
 
 fun alphaFun(x: Double): Double
 {
@@ -50,7 +50,7 @@ fun alphaFun(x: Double): Double
 
 val pFun = { x: Double -> alphaFun(x) * 2 / parameters.r }
 
-val fFun = { x: Double -> alphaFun(x) * 2 * parameters.t0 / parameters.r }
+val fFun = { x: Double -> alphaFun(x) * 2 * parameters.tZero / parameters.r }
 
 val aAFun = { x: Double -> parameters.t / parameters.h * minusApprox(kFun, x, parameters.t) }
 
@@ -61,7 +61,7 @@ val bBFun =
 
 val fFFun = { x: Double, t: Double -> parameters.h * parameters.t * fFun(x) + t * parameters.h * cFun(t) }
 
-fun leftConds(tList: MutableList<Double>): Triple<Double, Double, Double>
+fun leftexitConditions(tList: MutableList<Double>): Triple<Double, Double, Double>
 {
     val c = plusApprox(cFun, tList[0], parameters.t)
     val k = plusApprox(kFun, tList[0], parameters.t)
@@ -86,7 +86,7 @@ fun leftConds(tList: MutableList<Double>): Triple<Double, Double, Double>
     return Triple(kZero, mZero, pZero)
 }
 
-fun rightConds(tList: MutableList<Double>): Triple<Double, Double, Double>
+fun rightexitConditions(tList: MutableList<Double>): Triple<Double, Double, Double>
 {
     val c = minusApprox(cFun, tList.last(), parameters.t)
     val k = minusApprox(kFun, tList.last(), parameters.t)
@@ -106,7 +106,7 @@ fun rightConds(tList: MutableList<Double>): Triple<Double, Double, Double>
     val pN =
         parameters.h / 8 * c * (tList.last() + tList[tList.size - 2]) +
                 parameters.h / 4 * cFun(tList.last()) * tList.last() +
-                parameters.t * parameters.alphaN * parameters.t0 +
+                parameters.t * parameters.alphaN * parameters.tZero +
                 parameters.t * parameters.h / 4 * (fFun(
             parameters.l
         ) + fFun(parameters.l - parameters.h / 2))
@@ -116,8 +116,8 @@ fun rightConds(tList: MutableList<Double>): Triple<Double, Double, Double>
 
 fun formNewTList(list: MutableList<Double>): MutableList<Double>
 {
-    val zeroTriple = leftConds(list)
-    val nTriple = rightConds(list)
+    val zeroTriple = leftexitConditions(list)
+    val nTriple = rightexitConditions(list)
 
     val xiList: MutableList<Double> = mutableListOf(0.0, -zeroTriple.second / zeroTriple.first)
     val etaList: MutableList<Double> = mutableListOf(0.0, zeroTriple.third / zeroTriple.first)
@@ -141,7 +141,8 @@ fun formNewTList(list: MutableList<Double>): MutableList<Double>
     for (i in 0..curN)
         outT.add(0.0)
 
-    outT[curN] = (nTriple.third - nTriple.second * etaList[curN]) / (nTriple.first + nTriple.second * xiList[curN])
+    outT[curN] =
+        (nTriple.third - nTriple.second * etaList[curN]) / (nTriple.first + nTriple.second * xiList[curN])
 
     for (i in curN - 1 downTo 0)
         outT[i] = xiList[i + 1] * outT[i + 1] + etaList[i + 1]
@@ -156,22 +157,22 @@ fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
 
     for (i in 0..(parameters.l / parameters.h).toInt())
     {
-        tList.add(parameters.t0)
+        tList.add(parameters.tZero)
         newTList.add(0.0)
     }
 
     val outList = mutableListOf(tList)
 
     var curT = 0.0
-    var cond = true
-    while (cond)
+    var exitCondition = true
+    while (exitCondition)
     {
-        var prevTList = tList
+        var tempList = tList
         var max = 1.0
 
         while (max >= 1)
         {
-            newTList = formNewTList(prevTList)
+            newTList = formNewTList(tempList)
             max = abs((tList.first() - newTList.first()) / newTList.first())
 
             for (ind in tList.indices)
@@ -180,18 +181,18 @@ fun simpleIteration(): Pair<MutableList<MutableList<Double>>, Double>
                     max = abs((tList[ind] - newTList[ind]) / newTList[ind])
             }
 
-            prevTList = newTList
+            tempList = newTList
         }
 
         outList.add(newTList)
         curT += parameters.t
 
-        cond = false
+        exitCondition = false
         for (ind in tList.indices)
         {
             if (abs(tList[ind] - newTList[ind]) / newTList[ind] > parameters.epsilon)
             {
-                cond = true
+                exitCondition = true
                 break
             }
         }
@@ -215,7 +216,6 @@ fun main()
     }
 
     val plot = Plot2DPanel()
-    println(out.first.size)
     for (curY in out.first.indices)
     {
         if (curY % 2 == 0)
@@ -224,8 +224,36 @@ fun main()
 
     val frame = JFrame("Plots in Kotlin oh")
     plot.addLegend("SOUTH")
+    plot.setAxisLabel(0, "x")
+    plot.setAxisLabel(1, "T")
+    frame.setSize(1000, 1000)
     frame.contentPane = plot
     frame.isVisible = true
+
+    val secList = mutableListOf<Double>()
+    i = 0.0
+    while (i < out.second && secList.size != out.first.size)
+    {
+        secList.add(i)
+        i += parameters.t
+    }
+
+    val sPlot = Plot2DPanel()
+    var k = 0.0
+    while (k < parameters.l / 3)
+    {
+        val curList = mutableListOf<Double>()
+        for (curF in out.first)
+            curList.add((curF[(k / parameters.h).toInt()]))
+        sPlot.addLinePlot(k.toString(), secList.toDoubleArray(), curList.toDoubleArray())
+
+        k += 0.1
+    }
+    sPlot.addLegend("SOUTH")
+    val newFrame = JFrame("Second plot")
+    newFrame.setSize(1000, 1000)
+    newFrame.contentPane = sPlot
+    newFrame.isVisible = true
 
 //    val x = doubleArrayOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
 //    val y = doubleArrayOf(45.0, 89.0, 6.0, 32.0, 63.0, 12.0)
